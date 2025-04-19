@@ -365,6 +365,7 @@ export class MediasoupClient {
           {
             producerId,
             rtpCapabilities,
+            transportId: this.recvTransport.id,
           },
           async (response: any) => {
             if (response.error) {
@@ -405,7 +406,7 @@ export class MediasoupClient {
                   
                   // Important: Add these attributes for better audio playback
                   audioElement.setAttribute('playsinline', '');
-                  audioElement.setAttribute('muted', 'false');
+                  audioElement.muted = false; 
                   
                   // Add to DOM to ensure it plays
                   document.body.appendChild(audioElement);
@@ -414,7 +415,11 @@ export class MediasoupClient {
                   const playPromise = audioElement.play();
                   
                   if (playPromise !== undefined) {
-                    playPromise.catch(error => {
+                    playPromise.then(() => {
+                      console.log(`[Client ${this.peerId}] Audio playback initiated successfully for consumer ${consumer.id}`);
+                      // Explicitly ensure unmuted state *after* successful play starts
+                      audioElement.muted = false;
+                    }).catch(error => {
                       console.error('Audio playback failed:', error);
                       
                       // Create event handler for user interaction to enable audio

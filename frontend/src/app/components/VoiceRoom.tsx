@@ -108,8 +108,42 @@ const VoiceRoom: React.FC<VoiceRoomProps> = ({ roomId, username }) => {
         });
         
         // Setup connection event listeners
-        socketRef.current.on('connect', () => {
+        socketRef.current.on('connect',async () => {
           console.log('Socket.IO connection established');
+          // Initialize MediaSoup client
+          if (socketRef.current) {
+            mediasoupClientRef.current = new MediasoupClient({
+              socket: socketRef.current,
+              roomId,
+              peerId: userId.current,
+            });
+            
+            await mediasoupClientRef.current.connect();
+            setIsConnected(true);
+            
+            // Add current user to room
+            socketRef.current.emit('joinRoom', {
+              userId: userId.current,
+              username,
+              roomId,
+            });
+            
+            // Add current user to local state immediately
+            const currentUser = {
+              id: userId.current,
+              name: username,
+              isSpeaking: false
+            };
+            
+            setUsers(prev => {
+              if (!prev.some(user => user.id === currentUser.id)) {
+                return [...prev, currentUser];
+              }
+              return prev;
+            });
+          }
+          
+          setIsLoading(false);
         });
         
         socketRef.current.on('connect_error', (err) => {
@@ -154,40 +188,7 @@ const VoiceRoom: React.FC<VoiceRoomProps> = ({ roomId, username }) => {
           );
         });
         
-        // Initialize MediaSoup client
-        if (socketRef.current) {
-          mediasoupClientRef.current = new MediasoupClient({
-            socket: socketRef.current,
-            roomId,
-            peerId: userId.current,
-          });
-          
-          await mediasoupClientRef.current.connect();
-          setIsConnected(true);
-          
-          // Add current user to room
-          socketRef.current.emit('joinRoom', {
-            userId: userId.current,
-            username,
-            roomId,
-          });
-          
-          // Add current user to local state immediately
-          const currentUser = {
-            id: userId.current,
-            name: username,
-            isSpeaking: false
-          };
-          
-          setUsers(prev => {
-            if (!prev.some(user => user.id === currentUser.id)) {
-              return [...prev, currentUser];
-            }
-            return prev;
-          });
-        }
-        
-        setIsLoading(false);
+
       } catch (err) {
         console.error('Failed to initialize room:', err);
         setError('Failed to connect to the voice room. Please try again.');

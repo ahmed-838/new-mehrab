@@ -348,7 +348,7 @@ io.on('connection', async (socket) => {
     }
   });
 
-  socket.on('consume', async ({ producerId, rtpCapabilities }, callback) => {
+  socket.on('consume', async ({ producerId, rtpCapabilities, transportId }, callback) => {
     try {
       console.log(`Peer ${peerId} wants to consume producer ${producerId}`);
       const producer = producers.get(producerId);
@@ -362,11 +362,7 @@ io.on('connection', async (socket) => {
       }
       
       // Create consumer transport if necessary
-      let consumerTransport;
-      for (const [, transport] of peer.transports) {
-        consumerTransport = transport;
-        break;
-      }
+      const consumerTransport = peer.transports.get(transportId);
       
       if (!consumerTransport) {
         throw new Error('No transport available for consuming');
